@@ -79,12 +79,22 @@
             <el-icon><ZoomOut /></el-icon>
           </el-button>
           <el-button size="small" disabled class="zoom-display">
-            {{ Math.round(zoomLevel * 100) }}%
+            {{ Math.round(zoomLevel * baseScale * 100) }}%
           </el-button>
           <el-button size="small" @click="zoomIn" :disabled="zoomLevel >= maxZoom">
             <el-icon><ZoomIn /></el-icon>
           </el-button>
         </el-button-group>
+        
+        <el-button size="small" @click="fitToScreen" class="fit-btn">
+          <el-icon><FullScreen /></el-icon>
+          适应屏幕
+        </el-button>
+        
+        <el-button size="small" @click="actualSize" class="actual-btn">
+          <el-icon><ScaleToOriginal /></el-icon>
+          实际大小
+        </el-button>
         
         <el-button size="small" @click="resetZoom" class="reset-btn">
           <el-icon><Refresh /></el-icon>
@@ -97,7 +107,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
-import { Picture, Loading, Warning, ZoomOut, ZoomIn, Refresh } from '@element-plus/icons-vue'
+import { Picture, Loading, Warning, ZoomOut, ZoomIn, Refresh, FullScreen, ScaleToOriginal } from '@element-plus/icons-vue'
 import { usePSDStore } from '@/stores/psd'
 import { useResponsiveLayout } from '@/composables/useResponsive'
 
@@ -116,6 +126,8 @@ const imageNaturalHeight = ref(0)
 const layerStateChanged = ref(false)
 const layerChangeTimestamp = ref(0) // 使用时间戳来跟踪变化
 const dynamicPreviewImage = ref<string | null>(null) // 动态生成的预览图
+const panX = ref(0) // 水平偏移
+const panY = ref(0) // 垂直偏移
 
 // 缩放限制
 const minZoom = 0.1
@@ -209,27 +221,37 @@ const regeneratePreview = () => {
   }
 }
 
+// 计算基础缩放比例（适应容器）
+const baseScale = computed(() => {
+  if (!imageLoaded.value || !imageNaturalWidth.value || !imageNaturalHeight.value || !canvasWrapper.value) {
+    return 1
+  }
+  
+  const containerRect = canvasWrapper.value.getBoundingClientRect()
+  const containerWidth = containerRect.width - 32 // 减去padding
+  const containerHeight = containerRect.height - 32
+  
+  const scaleX = containerWidth / imageNaturalWidth.value
+  const scaleY = containerHeight / imageNaturalHeight.value
+  
+  return Math.min(scaleX, scaleY, 1) // 不超过原始大小
+})
+
 // 图片样式
 const imageStyle = computed(() => {
   if (!imageLoaded.value || !imageNaturalWidth.value || !imageNaturalHeight.value) {
     return {}
   }
   
-  const containerWidth = isMobile.value ? 300 : isTablet.value ? 500 : 800
-  const containerHeight = isMobile.value ? 300 : isTablet.value ? 400 : 600
-  
-  // 计算适合容器的缩放比例
-  const scaleX = containerWidth / imageNaturalWidth.value
-  const scaleY = containerHeight / imageNaturalHeight.value
-  const baseScale = Math.min(scaleX, scaleY, 1) // 不要放大原始图片
-  
-  const finalScale = baseScale * zoomLevel.value
+  const finalScale = baseScale.value * zoomLevel.value
   
   return {
     width: `${imageNaturalWidth.value * finalScale}px`,
     height: `${imageNaturalHeight.value * finalScale}px`,
     maxWidth: 'none',
-    maxHeight: 'none'
+    maxHeight: 'none',
+    transform: `translate(${panX.value}px, ${panY.value}px)`,
+    transformOrigin: 'center center'
   }
 })
 
@@ -242,9 +264,10 @@ const handleImageLoad = (event: Event) => {
 }
 
 // 缩放控制
-const zoomIn = () => {
+const zoomIn = (centerX?: number, centerY?: number) => {
   if (zoomLevel.value < maxZoom) {
     const newZoom = Math.min(zoomLevel.value + zoomStep, maxZoom)
+    adjustPanForZoom(zoomLevel.value, newZoom, centerX, centerY)
     console.log('放大缩放:', zoomLevel.value, '->', newZoom)
     zoomLevel.value = newZoom
   } else {
@@ -252,9 +275,10 @@ const zoomIn = () => {
   }
 }
 
-const zoomOut = () => {
+const zoomOut = (centerX?: number, centerY?: number) => {
   if (zoomLevel.value > minZoom) {
     const newZoom = Math.max(zoomLevel.value - zoomStep, minZoom)
+    adjustPanForZoom(zoomLevel.value, newZoom, centerX, centerY)
     console.log('缩小缩放:', zoomLevel.value, '->', newZoom)
     zoomLevel.value = newZoom
   } else {
@@ -265,6 +289,47 @@ const zoomOut = () => {
 const resetZoom = () => {
   console.log('重置缩放:', zoomLevel.value, '-> 1')
   zoomLevel.value = 1
+  panX.value = 0
+  panY.value = 0
+}
+
+// 适应屏幕
+const fitToScreen = () => {
+  console.log('适应屏幕')
+  zoomLevel.value = 1
+  panX.value = 0
+  panY.value = 0
+}
+
+// 实际大小
+const actualSize = () => {
+  console.log('实际大小')
+  if (baseScale.value > 0) {
+    zoomLevel.value = 1 / baseScale.value
+    panX.value = 0
+    panY.value = 0
+  }
+}
+
+// 根据缩放中心调整平移位置
+const adjustPanForZoom = (oldZoom: number, newZoom: number, centerX?: number, centerY?: number) => {
+  if (!canvasWrapper.value || centerX === undefined || centerY === undefined) return
+  
+  const containerRect = canvasWrapper.value.getBoundingClientRect()
+  const containerCenterX = containerRect.width / 2
+  const containerCenterY = containerRect.height / 2
+  
+  // 计算鼠标相对于容器中心的偏移
+  const offsetX = centerX - containerCenterX
+  const offsetY = centerY - containerCenterY
+  
+  // 计算缩放比例变化
+  const scaleDiff = newZoom - oldZoom
+  const baseScaleValue = baseScale.value
+  
+  // 调整平移以保持鼠标位置不变
+  panX.value -= offsetX * scaleDiff * baseScaleValue
+  panY.value -= offsetY * scaleDiff * baseScaleValue
 }
 
 // 监听文件变化，重置状态（但要区分是新文件还是图层变化）
@@ -272,6 +337,8 @@ watch(currentFile, (newFile, oldFile) => {
   if (newFile && (!oldFile || newFile.name !== oldFile.name)) {
     // 只有在真正切换文件时才重置状态
     zoomLevel.value = 1
+    panX.value = 0
+    panY.value = 0
     imageLoaded.value = false
     imageNaturalWidth.value = 0
     imageNaturalHeight.value = 0
@@ -338,12 +405,19 @@ const handleWheel = (event: WheelEvent) => {
   
   event.preventDefault()
   
+  // 获取鼠标相对于容器的位置
+  const rect = canvasWrapper.value?.getBoundingClientRect()
+  if (!rect) return
+  
+  const centerX = event.clientX - rect.left
+  const centerY = event.clientY - rect.top
+  
   if (event.deltaY < 0) {
     console.log('滚轮放大')
-    zoomIn()
+    zoomIn(centerX, centerY)
   } else {
     console.log('滚轮缩小')
-    zoomOut()
+    zoomOut(centerX, centerY)
   }
 }
 
@@ -597,9 +671,11 @@ watch(() => currentFile.value?.name, (newName, oldName) => {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
     
     @include respond-below(md) {
       justify-content: center;
+      gap: 6px;
     }
     
     .zoom-display {
@@ -612,8 +688,20 @@ watch(() => currentFile.value?.name, (newName, oldName) => {
       }
     }
     
+    .fit-btn,
+    .actual-btn,
     .reset-btn {
       margin-left: 4px;
+      
+      @include respond-below(md) {
+        margin-left: 2px;
+        font-size: 12px;
+        padding: 6px 8px;
+        
+        .el-icon {
+          margin-right: 2px;
+        }
+      }
     }
   }
 }

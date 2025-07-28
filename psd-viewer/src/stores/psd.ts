@@ -106,7 +106,23 @@ export const usePSDStore = defineStore('psd', () => {
     const toggleLayer = (layers: PSDLayer[]): boolean => {
       for (const layer of layers) {
         if (layer.id === layerId) {
-          layer.visible = !layer.visible
+          const newVisibility = !layer.visible
+          layer.visible = newVisibility
+          
+          // 递归设置所有子图层的可见性
+          const setChildrenVisibility = (children: PSDLayer[], visible: boolean) => {
+            children.forEach(child => {
+              child.visible = visible
+              if (child.children) {
+                setChildrenVisibility(child.children, visible)
+              }
+            })
+          }
+          
+          if (layer.children) {
+            setChildrenVisibility(layer.children, newVisibility)
+          }
+          
           return true
         }
         if (layer.children && toggleLayer(layer.children)) {
