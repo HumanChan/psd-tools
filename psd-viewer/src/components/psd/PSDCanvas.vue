@@ -3,8 +3,19 @@
     <div class="canvas-wrapper" ref="canvasWrapper">
       <!-- PSD预览区域 -->
       <div class="canvas-content" v-if="currentFile">
-        <!-- 显示高质量预览图或缩略图 -->
-        <div v-if="currentFile.previewImage || currentFile.thumbnail" class="psd-preview">
+        <!-- 显示动态渲染的预览图 -->
+        <div v-if="dynamicPreviewImage" class="psd-preview">
+          <img 
+            :src="dynamicPreviewImage" 
+            :alt="currentFile.name"
+            class="psd-image"
+            :style="imageStyle"
+            @load="handleImageLoad"
+          />
+        </div>
+        
+        <!-- 如果动态渲染失败，显示静态预览图 -->
+        <div v-else-if="currentFile.previewImage || currentFile.thumbnail" class="psd-preview">
           <img 
             :src="currentFile.previewImage || currentFile.thumbnail" 
             :alt="currentFile.name"
@@ -83,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Picture, Loading, Warning, ZoomOut, ZoomIn, Refresh } from '@element-plus/icons-vue'
 import { usePSDStore } from '@/stores/psd'
 import { useResponsiveLayout } from '@/composables/useResponsive'
@@ -100,6 +111,7 @@ const zoomLevel = ref(1)
 const imageLoaded = ref(false)
 const imageNaturalWidth = ref(0)
 const imageNaturalHeight = ref(0)
+const dynamicPreviewImage = ref<string | null>(null)
 
 // 缩放限制
 const minZoom = 0.1
@@ -110,6 +122,13 @@ const zoomStep = 0.1
 const currentFile = computed(() => psdStore.currentFile)
 const loading = computed(() => psdStore.loading)
 const error = computed(() => psdStore.error)
+
+// 动态渲染PSD预览图 (简化版本)
+const renderDynamicPreview = () => {
+  // 目前直接使用静态预览图，因为ag-psd的图层canvas可能不可用
+  // 这是一个基础实现，图层可见性的变化会通过重新解析PSD来实现
+  dynamicPreviewImage.value = currentFile.value?.previewImage || null
+}
 
 // 图片样式
 const imageStyle = computed(() => {
@@ -161,14 +180,47 @@ const resetZoom = () => {
 }
 
 // 监听文件变化，重置状态
-watch(currentFile, (newFile) => {
+watch(currentFile, (newFile, oldFile) => {
   if (newFile) {
     zoomLevel.value = 1
     imageLoaded.value = false
     imageNaturalWidth.value = 0
     imageNaturalHeight.value = 0
+    
+    // 初始渲染
+    nextTick(() => {
+      renderDynamicPreview()
+    })
+  } else {
+    dynamicPreviewImage.value = null
   }
 }, { immediate: true })
+
+// 监听图层变化，重新渲染
+watch(() => {
+  // 监听图层的可见性变化
+  if (!currentFile.value) return null
+  
+  // 生成一个包含所有图层可见性状态的字符串，用于检测变化
+  const getLayerStates = (layers: any[]): string => {
+    return layers.map(layer => {
+      const state = `${layer.id}:${layer.visible}`
+      if (layer.children && layer.children.length > 0) {
+        return state + '|' + getLayerStates(layer.children)
+      }
+      return state
+    }).join(',')
+  }
+  
+  return getLayerStates(currentFile.value.layers)
+}, () => {
+  // 当图层可见性发生变化时，重新渲染
+  if (currentFile.value) {
+    nextTick(() => {
+      renderDynamicPreview()
+    })
+  }
+})
 
 // 键盘快捷键
 const handleKeydown = (event: KeyboardEvent) => {

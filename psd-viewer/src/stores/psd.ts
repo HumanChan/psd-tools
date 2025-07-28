@@ -13,6 +13,7 @@ export interface PSDLayer {
   height: number
   children?: PSDLayer[]
   thumbnail?: string
+  canvas?: HTMLCanvasElement  // 保存图层的canvas用于动态渲染
 }
 
 export interface PSDFile {
@@ -25,6 +26,7 @@ export interface PSDFile {
   layers: PSDLayer[]
   thumbnail?: string  // 小缩略图 (200x200)
   previewImage?: string  // 高质量预览图 (保持原始尺寸或适当缩放)
+  originalCanvas?: HTMLCanvasElement  // 保存原始canvas用于动态渲染
 }
 
 export const usePSDStore = defineStore('psd', () => {
@@ -97,6 +99,8 @@ export const usePSDStore = defineStore('psd', () => {
       for (const layer of layers) {
         if (layer.id === layerId) {
           layer.visible = !layer.visible
+          // 触发重新渲染信号
+          currentFile.value = { ...currentFile.value }
           return true
         }
         if (layer.children && toggleLayer(layer.children)) {

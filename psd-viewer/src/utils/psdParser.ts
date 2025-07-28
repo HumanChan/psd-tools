@@ -120,7 +120,8 @@ export class PSDParser {
       colorMode: this.getColorModeString(psd.colorMode),
       layers: this.convertLayers(psd.children || []),
       thumbnail: this.generateThumbnail(psd),
-      previewImage: this.generatePreviewImage(psd)
+      previewImage: this.generatePreviewImage(psd),
+      originalCanvas: psd.canvas as HTMLCanvasElement  // 保存原始canvas
     }
   }
 
@@ -142,7 +143,8 @@ export class PSDParser {
         top: layer.top || 0,
         width: (layer.right || 0) - (layer.left || 0),
         height: (layer.bottom || 0) - (layer.top || 0),
-        thumbnail: this.generateLayerThumbnail(layer)
+        thumbnail: this.generateLayerThumbnail(layer),
+        canvas: layer.canvas as HTMLCanvasElement  // 保存图层canvas
       }
 
       // 处理子图层 (图层组)
@@ -360,10 +362,81 @@ export class PSDParser {
   }
 
   /**
+   * 根据图层可见性重新生成预览图
+   */
+  public async regeneratePreview(psdFile: PSDFile, layerVisibilityMap: Map<string, boolean>): Promise<string | undefined> {
+    try {
+      if (!psdFile.originalCanvas) {
+        return undefined
+      }
+
+      // 创建新的canvas
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return undefined
+
+      canvas.width = psdFile.width
+      canvas.height = psdFile.height
+
+      // 清除画布
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+      // 如果有图层canvas数据，则渲染可见图层
+      const renderLayers = (layers: PSDLayer[]) => {
+        layers.forEach(layer => {
+          const isVisible = layerVisibilityMap.get(layer.id) ?? layer.visible
+          
+          if (isVisible && layer.canvas) {
+            try {
+              const alpha = (layer.opacity || 100) / 100
+              const previousAlpha = ctx.globalAlpha
+              ctx.globalAlpha = previousAlpha * alpha
+
+              ctx.drawImage(layer.canvas, layer.left, layer.top)
+              ctx.globalAlpha = previousAlpha
+            } catch (error) {
+              console.warn('渲染图层失败:', layer.name, error)
+            }
+          }
+
+          if (layer.children) {
+            renderLayers(layer.children)
+          }
+        })
+      }
+
+      renderLayers(psdFile.layers)
+
+      // 生成高质量预览图
+      const maxSize = 2048
+      const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height, 1)
+      
+      if (scale < 1) {
+        const previewCanvas = document.createElement('canvas')
+        const previewCtx = previewCanvas.getContext('2d')
+        if (!previewCtx) return canvas.toDataURL('image/png')
+        
+        previewCanvas.width = Math.floor(canvas.width * scale)
+        previewCanvas.height = Math.floor(canvas.height * scale)
+        
+        previewCtx.imageSmoothingEnabled = true
+        previewCtx.imageSmoothingQuality = 'high'
+        
+        previewCtx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height)
+        return previewCanvas.toDataURL('image/png')
+      } else {
+        return canvas.toDataURL('image/png')
+      }
+    } catch (error) {
+      console.warn('重新生成预览图失败:', error)
+      return undefined
+    }
+  }
+
+  /**
    * 生成图层缩略图
    */
   private generateLayerThumbnail(layer: Layer): string | undefined {
-    try {
       if (layer.canvas) {
         // 如果图层有canvas数据，生成缩略图
         const maxSize = 64
