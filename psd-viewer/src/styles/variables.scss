@@ -1,0 +1,44 @@
+@use 'sass:map';
+
+// 响应式断点定义
+$breakpoints: (
+  xs: 0,
+  sm: 576px,
+  md: 768px,
+  lg: 992px,
+  xl: 1200px,
+  xxl: 1600px
+);
+
+// 响应式mixins
+@mixin respond-to($breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
+    @media (min-width: map.get($breakpoints, $breakpoint)) {
+      @content;
+    }
+  }
+}
+
+@mixin respond-below($breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
+    @media (max-width: map.get($breakpoints, $breakpoint) - 1px) {
+      @content;
+    }
+  }
+}
+
+@mixin respond-between($min, $max) {
+  @if map.has-key($breakpoints, $min) and map.has-key($breakpoints, $max) {
+    @media (min-width: map.get($breakpoints, $min)) and (max-width: map.get($breakpoints, $max) - 1px) {
+      @content;
+    }
+  }
+}
+
+// 布局变量
+$sidebar-width-desktop: 320px;
+$sidebar-width-tablet: 280px;
+$panel-width-desktop: 280px;
+$toolbar-height-desktop: 60px;
+$toolbar-height-mobile: 50px;
+$info-panel-height-tablet: 120px;

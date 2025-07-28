@@ -1,0 +1,105 @@
+@use './variables' as *;
+
+// 全局重置样式
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+}
+
+// 响应式布局网格
+.app-layout {
+  height: 100vh;
+  width: 100vw;
+  display: grid;
+  overflow: hidden;
+  
+  // 桌面端布局 (≥1200px)
+  @include respond-to(xl) {
+    grid-template-columns: $sidebar-width-desktop 1fr $panel-width-desktop;
+    grid-template-rows: $toolbar-height-desktop 1fr;
+    grid-template-areas:
+      "toolbar toolbar toolbar"
+      "sidebar canvas panel";
+  }
+  
+  // 平板端布局 (768px-1199px)
+  @include respond-between(md, xl) {
+    grid-template-columns: $sidebar-width-tablet 1fr;
+    grid-template-rows: $toolbar-height-desktop 1fr $info-panel-height-tablet;
+    grid-template-areas:
+      "toolbar toolbar"
+      "sidebar canvas"
+      "info info";
+  }
+  
+  // 移动端布局 (<768px)
+  @include respond-below(md) {
+    grid-template-columns: 1fr;
+    grid-template-rows: $toolbar-height-mobile 1fr auto;
+    grid-template-areas:
+      "toolbar"
+      "canvas"
+      "drawer";
+  }
+}
+
+// 网格区域定义
+.toolbar-area { grid-area: toolbar; }
+.sidebar-area { grid-area: sidebar; }
+.canvas-area { grid-area: canvas; }
+.panel-area { grid-area: panel; }
+.info-area { grid-area: info; }
+.drawer-area { grid-area: drawer; }
+
+// 公共样式
+.full-height {
+  height: 100%;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// 滚动条样式优化
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
