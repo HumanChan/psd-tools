@@ -248,6 +248,12 @@ const startProcessing = async () => {
     console.log('解析的PSD数据:', psdData)
     console.log('图层数量:', psdData.layers.length)
     
+    // 检查第一个图层的结构
+    if (psdData.layers.length > 0) {
+      console.log('第一个图层详细信息:', psdData.layers[0])
+      console.log('第一个图层是否有canvas:', !!psdData.layers[0].canvas)
+    }
+    
     psdStore.setCurrentFile(psdData)
     ElMessage.success(`PSD文件解析成功！共${psdData.layers.length}个图层`)
     

@@ -3,26 +3,28 @@
     <div class="canvas-wrapper" ref="canvasWrapper">
       <!-- PSD预览区域 -->
       <div class="canvas-content" v-if="currentFile">
-        <!-- 显示动态渲染的预览图 -->
-        <div v-if="dynamicPreviewImage" class="psd-preview">
+        <!-- 显示预览图 -->
+        <div v-if="dynamicPreviewImage || currentFile.previewImage || currentFile.thumbnail" class="psd-preview">
           <img 
-            :src="dynamicPreviewImage" 
+            :src="dynamicPreviewImage || currentFile.previewImage || currentFile.thumbnail" 
             :alt="currentFile.name"
             class="psd-image"
+            :class="{ 'layer-modified': layerStateChanged }"
             :style="imageStyle"
             @load="handleImageLoad"
           />
-        </div>
-        
-        <!-- 如果动态渲染失败，显示静态预览图 -->
-        <div v-else-if="currentFile.previewImage || currentFile.thumbnail" class="psd-preview">
-          <img 
-            :src="currentFile.previewImage || currentFile.thumbnail" 
-            :alt="currentFile.name"
-            class="psd-image"
-            :style="imageStyle"
-            @load="handleImageLoad"
-          />
+          
+          <!-- 图层可见性变化提示 -->
+          <div v-if="layerStateChanged" class="layer-change-overlay">
+            <div class="change-message">
+              <el-icon class="change-icon"><Refresh /></el-icon>
+              <div class="change-content">
+                <p>图层状态已改变</p>
+                <span class="change-hint" v-if="dynamicPreviewImage">预览图已更新</span>
+                <span class="change-hint" v-else>动态渲染中...</span>
+              </div>
+            </div>
+          </div>
         </div>
         
         <!-- 如果没有预览图，显示基本信息 -->
@@ -111,7 +113,9 @@ const zoomLevel = ref(1)
 const imageLoaded = ref(false)
 const imageNaturalWidth = ref(0)
 const imageNaturalHeight = ref(0)
-const dynamicPreviewImage = ref<string | null>(null)
+const layerStateChanged = ref(false)
+const layerChangeTimestamp = ref(0) // 使用时间戳来跟踪变化
+const dynamicPreviewImage = ref<string | null>(null) // 动态生成的预览图
 
 // 缩放限制
 const minZoom = 0.1
@@ -123,11 +127,86 @@ const currentFile = computed(() => psdStore.currentFile)
 const loading = computed(() => psdStore.loading)
 const error = computed(() => psdStore.error)
 
-// 动态渲染PSD预览图 (简化版本)
-const renderDynamicPreview = () => {
-  // 目前直接使用静态预览图，因为ag-psd的图层canvas可能不可用
-  // 这是一个基础实现，图层可见性的变化会通过重新解析PSD来实现
-  dynamicPreviewImage.value = currentFile.value?.previewImage || null
+// 动态重新合成预览图
+const regeneratePreview = () => {
+  if (!currentFile.value) {
+    dynamicPreviewImage.value = null
+    return
+  }
+
+  console.log('开始重新合成预览图')
+
+  try {
+    // 创建画布
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    canvas.width = currentFile.value.width
+    canvas.height = currentFile.value.height
+
+    // 清除画布（设置透明背景）
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+    // 递归渲染所有可见图层
+    const renderLayers = (layers: any[]) => {
+      layers.forEach(layer => {
+        if (layer.visible && layer.canvas) {
+          try {
+            console.log(`渲染图层: ${layer.name}, 位置: ${layer.left}, ${layer.top}`)
+            
+            // 设置透明度
+            const alpha = (layer.opacity || 100) / 100
+            const previousAlpha = ctx.globalAlpha
+            ctx.globalAlpha = previousAlpha * alpha
+
+            // 绘制图层
+            ctx.drawImage(layer.canvas, layer.left, layer.top)
+
+            // 恢复透明度
+            ctx.globalAlpha = previousAlpha
+          } catch (error) {
+            console.warn(`渲染图层失败: ${layer.name}`, error)
+          }
+        } else if (layer.visible) {
+          console.log(`图层 ${layer.name} 可见但没有canvas数据`)
+        }
+
+        // 递归处理子图层
+        if (layer.children && layer.children.length > 0) {
+          renderLayers(layer.children)
+        }
+      })
+    }
+
+    renderLayers(currentFile.value.layers)
+
+    // 生成高质量预览图
+    const maxSize = 2048
+    const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height, 1)
+    
+    if (scale < 1) {
+      const previewCanvas = document.createElement('canvas')
+      const previewCtx = previewCanvas.getContext('2d')
+      if (!previewCtx) return
+      
+      previewCanvas.width = Math.floor(canvas.width * scale)
+      previewCanvas.height = Math.floor(canvas.height * scale)
+      
+      previewCtx.imageSmoothingEnabled = true
+      previewCtx.imageSmoothingQuality = 'high'
+      
+      previewCtx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height)
+      dynamicPreviewImage.value = previewCanvas.toDataURL('image/png')
+    } else {
+      dynamicPreviewImage.value = canvas.toDataURL('image/png')
+    }
+
+    console.log('预览图重新合成完成')
+  } catch (error) {
+    console.warn('重新合成预览图失败:', error)
+    dynamicPreviewImage.value = null
+  }
 }
 
 // 图片样式
@@ -165,108 +244,138 @@ const handleImageLoad = (event: Event) => {
 // 缩放控制
 const zoomIn = () => {
   if (zoomLevel.value < maxZoom) {
-    zoomLevel.value = Math.min(zoomLevel.value + zoomStep, maxZoom)
+    const newZoom = Math.min(zoomLevel.value + zoomStep, maxZoom)
+    console.log('放大缩放:', zoomLevel.value, '->', newZoom)
+    zoomLevel.value = newZoom
+  } else {
+    console.log('已达到最大缩放级别')
   }
 }
 
 const zoomOut = () => {
   if (zoomLevel.value > minZoom) {
-    zoomLevel.value = Math.max(zoomLevel.value - zoomStep, minZoom)
+    const newZoom = Math.max(zoomLevel.value - zoomStep, minZoom)
+    console.log('缩小缩放:', zoomLevel.value, '->', newZoom)
+    zoomLevel.value = newZoom
+  } else {
+    console.log('已达到最小缩放级别')
   }
 }
 
 const resetZoom = () => {
+  console.log('重置缩放:', zoomLevel.value, '-> 1')
   zoomLevel.value = 1
 }
 
-// 监听文件变化，重置状态
+// 监听文件变化，重置状态（但要区分是新文件还是图层变化）
 watch(currentFile, (newFile, oldFile) => {
-  if (newFile) {
+  if (newFile && (!oldFile || newFile.name !== oldFile.name)) {
+    // 只有在真正切换文件时才重置状态
     zoomLevel.value = 1
     imageLoaded.value = false
     imageNaturalWidth.value = 0
     imageNaturalHeight.value = 0
-    
-    // 初始渲染
-    nextTick(() => {
-      renderDynamicPreview()
-    })
-  } else {
-    dynamicPreviewImage.value = null
+    layerStateChanged.value = false
+    layerChangeTimestamp.value = 0
   }
 }, { immediate: true })
 
-// 监听图层变化，重新渲染
-watch(() => {
-  // 监听图层的可见性变化
-  if (!currentFile.value) return null
-  
-  // 生成一个包含所有图层可见性状态的字符串，用于检测变化
-  const getLayerStates = (layers: any[]): string => {
-    return layers.map(layer => {
-      const state = `${layer.id}:${layer.visible}`
-      if (layer.children && layer.children.length > 0) {
-        return state + '|' + getLayerStates(layer.children)
-      }
-      return state
-    }).join(',')
-  }
-  
-  return getLayerStates(currentFile.value.layers)
-}, () => {
-  // 当图层可见性发生变化时，重新渲染
-  if (currentFile.value) {
-    nextTick(() => {
-      renderDynamicPreview()
-    })
+// 监听图层变化时间戳
+watch(() => currentFile.value?.layerChangeTimestamp, (newTimestamp) => {
+  if (newTimestamp && newTimestamp > layerChangeTimestamp.value) {
+    layerStateChanged.value = true
+    layerChangeTimestamp.value = newTimestamp
+    
+    // 重新生成预览图
+    regeneratePreview()
+    
+    // 3秒后自动隐藏提示
+    setTimeout(() => {
+      layerStateChanged.value = false
+    }, 3000)
   }
 })
 
 // 键盘快捷键
 const handleKeydown = (event: KeyboardEvent) => {
-  if (!currentFile.value) return
+  console.log('键盘事件:', event.key, event.ctrlKey, event.metaKey)
+  
+  if (!currentFile.value) {
+    console.log('没有当前文件，忽略键盘事件')
+    return
+  }
   
   // Ctrl/Cmd + 加号 放大
   if ((event.ctrlKey || event.metaKey) && (event.key === '+' || event.key === '=')) {
     event.preventDefault()
+    console.log('放大')
     zoomIn()
   }
   
   // Ctrl/Cmd + 减号 缩小
   if ((event.ctrlKey || event.metaKey) && event.key === '-') {
     event.preventDefault()
+    console.log('缩小')
     zoomOut()
   }
   
   // Ctrl/Cmd + 0 重置缩放
   if ((event.ctrlKey || event.metaKey) && event.key === '0') {
     event.preventDefault()
+    console.log('重置缩放')
     resetZoom()
   }
 }
 
 // 鼠标滚轮缩放
 const handleWheel = (event: WheelEvent) => {
-  if (!currentFile.value || !(event.ctrlKey || event.metaKey)) return
+  console.log('滚轮事件:', event.deltaY, event.ctrlKey, event.metaKey)
+  
+  if (!currentFile.value || !(event.ctrlKey || event.metaKey)) {
+    console.log('滚轮缩放条件不满足')
+    return
+  }
   
   event.preventDefault()
   
   if (event.deltaY < 0) {
+    console.log('滚轮放大')
     zoomIn()
   } else {
+    console.log('滚轮缩小')
     zoomOut()
   }
 }
 
 // 生命周期
 onMounted(() => {
-  document.addEventListener('keydown', handleKeydown)
-  canvasWrapper.value?.addEventListener('wheel', handleWheel, { passive: false })
+  setupEventListeners()
 })
 
 onUnmounted(() => {
+  cleanupEventListeners()
+})
+
+// 事件监听器管理
+const setupEventListeners = () => {
+  document.addEventListener('keydown', handleKeydown)
+  canvasWrapper.value?.addEventListener('wheel', handleWheel, { passive: false })
+}
+
+const cleanupEventListeners = () => {
   document.removeEventListener('keydown', handleKeydown)
   canvasWrapper.value?.removeEventListener('wheel', handleWheel)
+}
+
+// 监听currentFile变化，重新设置事件监听器（仅在文件切换时）
+watch(() => currentFile.value?.name, (newName, oldName) => {
+  if (newName && newName !== oldName) {
+    // 确保事件监听器正常工作
+    nextTick(() => {
+      cleanupEventListeners()
+      setupEventListeners()
+    })
+  }
 })
 </script>
 
@@ -325,12 +434,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;  /* 添加相对定位以支持绝对定位的提示层 */
   
   .psd-image {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     background: #fff;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.3s ease, filter 0.3s ease;
     
     // 棋盘背景，用于透明图像
     background-image: 
@@ -340,6 +450,12 @@ onUnmounted(() => {
       linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
     background-size: 16px 16px;
     background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    
+    &.layer-modified {
+      opacity: 0.85;
+      filter: brightness(0.95) contrast(0.95);
+      border: 2px solid #409eff;
+    }
   }
 }
 
@@ -498,6 +614,48 @@ onUnmounted(() => {
     
     .reset-btn {
       margin-left: 4px;
+    }
+  }
+}
+
+.layer-change-overlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  max-width: 280px;
+  
+  .change-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    
+    .change-icon {
+      font-size: 18px;
+      color: #409eff;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    
+    .change-content {
+      flex: 1;
+      
+      p {
+        margin: 0 0 6px 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      
+      .change-hint {
+        font-size: 12px;
+        color: #ccc;
+        line-height: 1.4;
+      }
     }
   }
 }

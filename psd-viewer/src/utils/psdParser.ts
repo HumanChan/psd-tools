@@ -120,8 +120,7 @@ export class PSDParser {
       colorMode: this.getColorModeString(psd.colorMode),
       layers: this.convertLayers(psd.children || []),
       thumbnail: this.generateThumbnail(psd),
-      previewImage: this.generatePreviewImage(psd),
-      originalCanvas: psd.canvas as HTMLCanvasElement  // 保存原始canvas
+      previewImage: this.generatePreviewImage(psd)
     }
   }
 
@@ -132,6 +131,8 @@ export class PSDParser {
     return agPsdLayers.map((layer, index) => {
       const layerId = `${parentPath}layer_${index}_${Date.now()}`
       const layerPath = parentPath ? `${parentPath}/${layer.name || 'Unnamed'}` : layer.name || 'Unnamed'
+
+      console.log(`转换图层: ${layer.name}, 有canvas: ${!!layer.canvas}, canvas尺寸: ${layer.canvas?.width}x${layer.canvas?.height}`)
 
       const psdLayer: PSDLayer = {
         id: layerId,
@@ -144,7 +145,7 @@ export class PSDParser {
         width: (layer.right || 0) - (layer.left || 0),
         height: (layer.bottom || 0) - (layer.top || 0),
         thumbnail: this.generateLayerThumbnail(layer),
-        canvas: layer.canvas as HTMLCanvasElement  // 保存图层canvas
+        canvas: layer.canvas as HTMLCanvasElement  // 重新添加canvas保存
       }
 
       // 处理子图层 (图层组)
@@ -437,6 +438,7 @@ export class PSDParser {
    * 生成图层缩略图
    */
   private generateLayerThumbnail(layer: Layer): string | undefined {
+    try {
       if (layer.canvas) {
         // 如果图层有canvas数据，生成缩略图
         const maxSize = 64

@@ -13,7 +13,7 @@ export interface PSDLayer {
   height: number
   children?: PSDLayer[]
   thumbnail?: string
-  canvas?: HTMLCanvasElement  // 保存图层的canvas用于动态渲染
+  canvas?: HTMLCanvasElement  // 重新添加canvas字段
 }
 
 export interface PSDFile {
@@ -26,7 +26,7 @@ export interface PSDFile {
   layers: PSDLayer[]
   thumbnail?: string  // 小缩略图 (200x200)
   previewImage?: string  // 高质量预览图 (保持原始尺寸或适当缩放)
-  originalCanvas?: HTMLCanvasElement  // 保存原始canvas用于动态渲染
+  layerChangeTimestamp?: number  // 图层变化时间戳，用于触发UI更新
 }
 
 export const usePSDStore = defineStore('psd', () => {
@@ -95,12 +95,18 @@ export const usePSDStore = defineStore('psd', () => {
   const toggleLayerVisibility = (layerId: string) => {
     if (!currentFile.value) return
     
+    // 深拷贝函数
+    const deepCloneLayers = (layers: PSDLayer[]): PSDLayer[] => {
+      return layers.map(layer => ({
+        ...layer,
+        children: layer.children ? deepCloneLayers(layer.children) : undefined
+      }))
+    }
+    
     const toggleLayer = (layers: PSDLayer[]): boolean => {
       for (const layer of layers) {
         if (layer.id === layerId) {
           layer.visible = !layer.visible
-          // 触发重新渲染信号
-          currentFile.value = { ...currentFile.value }
           return true
         }
         if (layer.children && toggleLayer(layer.children)) {
@@ -110,7 +116,18 @@ export const usePSDStore = defineStore('psd', () => {
       return false
     }
     
-    toggleLayer(currentFile.value.layers)
+    // 创建新的layers数组（深拷贝）
+    const newLayers = deepCloneLayers(currentFile.value.layers)
+    const result = toggleLayer(newLayers)
+    
+    if (result) {
+      // 创建完全新的文件对象以触发响应式更新
+      currentFile.value = {
+        ...currentFile.value,
+        layers: newLayers,
+        layerChangeTimestamp: Date.now() // 添加时间戳标记
+      }
+    }
   }
   
   const setLoading = (isLoading: boolean) => {
