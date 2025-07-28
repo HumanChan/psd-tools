@@ -23,7 +23,8 @@ export interface PSDFile {
   resolution: number
   colorMode: string
   layers: PSDLayer[]
-  thumbnail?: string
+  thumbnail?: string  // 小缩略图 (200x200)
+  previewImage?: string  // 高质量预览图 (保持原始尺寸或适当缩放)
 }
 
 export const usePSDStore = defineStore('psd', () => {

@@ -45,9 +45,7 @@
     <!-- 中央预览区域 -->
     <main class="canvas-area">
       <FileUpload v-if="!currentFile" />
-      <div class="placeholder" v-else>
-        PSD预览区域
-      </div>
+      <PSDCanvas v-else />
     </main>
 
     <!-- 右侧信息面板 (桌面端) -->
@@ -87,6 +85,7 @@ import { usePSDStore } from '@/stores/psd'
 import FileUpload from '@/components/psd/FileUpload.vue'
 import LayerTree from '@/components/psd/LayerTree.vue'
 import FileInfo from '@/components/psd/FileInfo.vue'
+import PSDCanvas from '@/components/psd/PSDCanvas.vue'
 
 // 响应式布局
 const { 
@@ -191,19 +190,6 @@ const actualSize = () => {
   border-top: 1px solid #e4e7ed;
   padding: 16px;
   overflow-y: auto;
-}
-
-// 占位符样式
-.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #909399;
-  font-size: 16px;
-  border: 2px dashed #dcdfe6;
-  margin: 16px;
-  border-radius: 8px;
 }
 
 // 移动端抽屉样式

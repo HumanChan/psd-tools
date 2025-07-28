@@ -242,7 +242,7 @@ const startProcessing = async () => {
     const psdData = await parsePSDFile(selectedFile.value, {
       skipLayerImageData: false,
       skipCompositeImageData: false,
-      useImageData: true
+      useImageData: false // 使用canvas而不是imageData来确保缩略图正常生成
     })
     
     console.log('解析的PSD数据:', psdData)

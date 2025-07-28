@@ -42,7 +42,7 @@ export class PSDParser {
         skipLayerImageData: options.skipLayerImageData || false,
         skipCompositeImageData: options.skipCompositeImageData || false,
         skipThumbnail: options.skipThumbnail || false,
-        useImageData: options.useImageData || true,
+        useImageData: options.useImageData || false, // 使用canvas而不是imageData
         useRawThumbnail: options.useRawThumbnail || false,
         ...options.agPsdOptions
       })
@@ -119,7 +119,8 @@ export class PSDParser {
       resolution: psd.imageResources?.resolutionInfo?.horizontalResolution || 72,
       colorMode: this.getColorModeString(psd.colorMode),
       layers: this.convertLayers(psd.children || []),
-      thumbnail: this.generateThumbnail(psd)
+      thumbnail: this.generateThumbnail(psd),
+      previewImage: this.generatePreviewImage(psd)
     }
   }
 
@@ -195,30 +196,161 @@ export class PSDParser {
   }
 
   /**
-   * 生成PSD文件缩略图
+   * 生成高质量预览图像
    */
-  private generateThumbnail(psd: Psd): string | undefined {
+  private generatePreviewImage(psd: Psd): string | undefined {
     try {
+      if (psd.canvas) {
+        const sourceCanvas = psd.canvas as HTMLCanvasElement
+        const maxSize = 2048 // 更高的分辨率限制
+        const scale = Math.min(maxSize / sourceCanvas.width, maxSize / sourceCanvas.height, 1)
+        
+        if (scale < 1) {
+          // 需要缩放但保持高质量
+          const previewCanvas = document.createElement('canvas')
+          const ctx = previewCanvas.getContext('2d')
+          if (!ctx) return undefined
+          
+          previewCanvas.width = Math.floor(sourceCanvas.width * scale)
+          previewCanvas.height = Math.floor(sourceCanvas.height * scale)
+          
+          // 使用高质量的图像缩放
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
+          
+          ctx.drawImage(sourceCanvas, 0, 0, previewCanvas.width, previewCanvas.height)
+          return previewCanvas.toDataURL('image/png')
+        } else {
+          // 直接使用原图，保持最高质量
+          return sourceCanvas.toDataURL('image/png')
+        }
+      }
+      
+      // 如果没有canvas，尝试使用imageData（与缩略图逻辑类似但分辨率更高）
       if (psd.imageData) {
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')
         if (!ctx) return undefined
 
-        // 设置缩略图尺寸 (最大200x200)
-        const maxSize = 200
-        const scale = Math.min(maxSize / (psd.width || 1), maxSize / (psd.height || 1))
-        
-        canvas.width = Math.floor((psd.width || 0) * scale)
-        canvas.height = Math.floor((psd.height || 0) * scale)
+        canvas.width = psd.width || 0
+        canvas.height = psd.height || 0
 
-        // 创建ImageData并绘制
-        const imageData = ctx.createImageData(canvas.width, canvas.height)
+        if (psd.imageData instanceof ImageData) {
+          ctx.putImageData(psd.imageData, 0, 0)
+        } else {
+          const width = psd.width || 0
+          const height = psd.height || 0
+          const imageData = ctx.createImageData(width, height)
+          
+          if (psd.imageData instanceof Uint8Array || Array.isArray(psd.imageData)) {
+            for (let i = 0; i < Math.min(imageData.data.length, psd.imageData.length); i++) {
+              imageData.data[i] = psd.imageData[i]
+            }
+            ctx.putImageData(imageData, 0, 0)
+          }
+        }
+
+        // 如果图像太大，进行高质量缩放
+        const maxSize = 2048
+        const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height, 1)
         
-        // 这里需要将psd.imageData转换为ImageData
-        // 由于ag-psd的imageData格式比较复杂，先返回undefined
-        // 在后续版本中可以实现完整的缩略图生成
+        if (scale < 1) {
+          const previewCanvas = document.createElement('canvas')
+          const previewCtx = previewCanvas.getContext('2d')
+          if (!previewCtx) return canvas.toDataURL('image/png')
+          
+          previewCanvas.width = Math.floor(canvas.width * scale)
+          previewCanvas.height = Math.floor(canvas.height * scale)
+          
+          previewCtx.imageSmoothingEnabled = true
+          previewCtx.imageSmoothingQuality = 'high'
+          
+          previewCtx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height)
+          return previewCanvas.toDataURL('image/png')
+        } else {
+          return canvas.toDataURL('image/png')
+        }
+      }
+    } catch (error) {
+      console.warn('生成预览图失败:', error)
+    }
+    
+    return undefined
+  }
+
+  /**
+   * 生成PSD文件缩略图
+   */
+  private generateThumbnail(psd: Psd): string | undefined {
+    try {
+      // 首先尝试使用合成图像的canvas
+      if (psd.canvas) {
+        const sourceCanvas = psd.canvas as HTMLCanvasElement
+        const maxSize = 200
+        const scale = Math.min(maxSize / sourceCanvas.width, maxSize / sourceCanvas.height, 1)
         
-        return canvas.toDataURL('image/png')
+        if (scale < 1) {
+          // 需要缩放
+          const thumbnailCanvas = document.createElement('canvas')
+          const ctx = thumbnailCanvas.getContext('2d')
+          if (!ctx) return undefined
+          
+          thumbnailCanvas.width = Math.floor(sourceCanvas.width * scale)
+          thumbnailCanvas.height = Math.floor(sourceCanvas.height * scale)
+          
+          ctx.drawImage(sourceCanvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height)
+          return thumbnailCanvas.toDataURL('image/png')
+        } else {
+          // 不需要缩放，直接使用原图
+          return sourceCanvas.toDataURL('image/png')
+        }
+      }
+      
+      // 如果没有canvas，尝试使用imageData
+      if (psd.imageData) {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return undefined
+
+        // 设置画布尺寸
+        canvas.width = psd.width || 0
+        canvas.height = psd.height || 0
+
+        // 将imageData绘制到canvas
+        if (psd.imageData instanceof ImageData) {
+          ctx.putImageData(psd.imageData, 0, 0)
+        } else {
+          // 如果imageData是Uint8Array格式，需要创建ImageData
+          const width = psd.width || 0
+          const height = psd.height || 0
+          const imageData = ctx.createImageData(width, height)
+          
+          // 复制数据 (假设是RGBA格式)
+          if (psd.imageData instanceof Uint8Array || Array.isArray(psd.imageData)) {
+            for (let i = 0; i < Math.min(imageData.data.length, psd.imageData.length); i++) {
+              imageData.data[i] = psd.imageData[i]
+            }
+            ctx.putImageData(imageData, 0, 0)
+          }
+        }
+
+        // 生成缩略图
+        const maxSize = 200
+        const scale = Math.min(maxSize / canvas.width, maxSize / canvas.height, 1)
+        
+        if (scale < 1) {
+          const thumbnailCanvas = document.createElement('canvas')
+          const thumbnailCtx = thumbnailCanvas.getContext('2d')
+          if (!thumbnailCtx) return canvas.toDataURL('image/png')
+          
+          thumbnailCanvas.width = Math.floor(canvas.width * scale)
+          thumbnailCanvas.height = Math.floor(canvas.height * scale)
+          
+          thumbnailCtx.drawImage(canvas, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height)
+          return thumbnailCanvas.toDataURL('image/png')
+        } else {
+          return canvas.toDataURL('image/png')
+        }
       }
     } catch (error) {
       console.warn('生成缩略图失败:', error)
