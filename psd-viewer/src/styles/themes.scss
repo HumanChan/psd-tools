@@ -1,0 +1,468 @@
+// =====================================
+// 🎨 PSD Viewer 主题系统
+// =====================================
+
+// 主题切换函数
+@function theme-get($key) {
+  @return var(--#{$key});
+}
+
+// CSS 自定义属性 - 明亮主题
+:root,
+.theme-light {
+  // 🎨 品牌色彩
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  
+  // 🌈 语义色彩
+  --color-success-50: #ecfdf5;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  
+  --color-warning-50: #fffbeb;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  
+  --color-error-50: #fef2f2;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  
+  // 🎭 中性色阶 (12层灰度系统)
+  --color-neutral-0: #ffffff;
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-neutral-950: #0a0a0a;
+  
+  // 📐 背景色彩
+  --bg-primary: var(--color-neutral-0);
+  --bg-secondary: var(--color-neutral-50);
+  --bg-tertiary: var(--color-neutral-100);
+  --bg-elevated: var(--color-neutral-0);
+  --bg-overlay: rgba(255, 255, 255, 0.8);
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  
+  // 📝 文字色彩
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-700);
+  --text-tertiary: var(--color-neutral-500);
+  --text-inverse: var(--color-neutral-0);
+  --text-brand: var(--color-primary-600);
+  
+  // 🖼️ 边框色彩
+  --border-primary: var(--color-neutral-200);
+  --border-secondary: var(--color-neutral-300);
+  --border-focus: var(--color-primary-500);
+  --border-error: var(--color-error-500);
+  
+  // 🌟 阴影系统
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-colored: 0 10px 15px -3px rgba(59, 130, 246, 0.1), 0 4px 6px -2px rgba(59, 130, 246, 0.05);
+  
+  // 💫 特殊效果
+  --backdrop-blur: blur(16px);
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-600) 100%);
+  --gradient-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+}
+
+// CSS 自定义属性 - 暗黑主题
+.theme-dark {
+  // 🎨 品牌色彩 (暗黑模式调整)
+  --color-primary-50: #1e3a8a;
+  --color-primary-100: #1d4ed8;
+  --color-primary-200: #2563eb;
+  --color-primary-300: #3b82f6;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #60a5fa;
+  --color-primary-700: #93c5fd;
+  --color-primary-800: #bfdbfe;
+  --color-primary-900: #dbeafe;
+  
+  // 🌈 语义色彩 (暗黑模式调整)
+  --color-success-50: #064e3b;
+  --color-success-500: #10b981;
+  --color-success-600: #34d399;
+  --color-success-700: #6ee7b7;
+  
+  --color-warning-50: #78350f;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #fbbf24;
+  --color-warning-700: #fcd34d;
+  
+  --color-error-50: #7f1d1d;
+  --color-error-500: #ef4444;
+  --color-error-600: #f87171;
+  --color-error-700: #fca5a5;
+  
+  // 🎭 中性色阶 (反转)
+  --color-neutral-0: #0a0a0a;
+  --color-neutral-50: #171717;
+  --color-neutral-100: #262626;
+  --color-neutral-200: #404040;
+  --color-neutral-300: #525252;
+  --color-neutral-400: #737373;
+  --color-neutral-500: #a3a3a3;
+  --color-neutral-600: #d4d4d4;
+  --color-neutral-700: #e5e5e5;
+  --color-neutral-800: #f5f5f5;
+  --color-neutral-900: #fafafa;
+  --color-neutral-950: #ffffff;
+  
+  // 📐 背景色彩
+  --bg-primary: var(--color-neutral-0);
+  --bg-secondary: var(--color-neutral-50);
+  --bg-tertiary: var(--color-neutral-100);
+  --bg-elevated: var(--color-neutral-50);
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+  --bg-glass: rgba(0, 0, 0, 0.7);
+  
+  // 📝 文字色彩
+  --text-primary: var(--color-neutral-900);
+  --text-secondary: var(--color-neutral-700);
+  --text-tertiary: var(--color-neutral-500);
+  --text-inverse: var(--color-neutral-0);
+  --text-brand: var(--color-primary-400);
+  
+  // 🖼️ 边框色彩
+  --border-primary: var(--color-neutral-200);
+  --border-secondary: var(--color-neutral-300);
+  --border-focus: var(--color-primary-400);
+  --border-error: var(--color-error-500);
+  
+  // 🌟 阴影系统 (暗黑模式调整)
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  --shadow-colored: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.1);
+  
+  // 💫 特殊效果
+  --backdrop-blur: blur(16px);
+  --gradient-primary: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-500) 100%);
+  --gradient-surface: linear-gradient(145deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+// =====================================
+// 🎯 设计令牌 (Design Tokens)
+// =====================================
+
+:root {
+  // 📏 间距系统 (4px 基准的8倍数系统)
+  --space-0: 0;
+  --space-1: 0.25rem;  // 4px
+  --space-2: 0.5rem;   // 8px
+  --space-3: 0.75rem;  // 12px
+  --space-4: 1rem;     // 16px
+  --space-5: 1.25rem;  // 20px
+  --space-6: 1.5rem;   // 24px
+  --space-8: 2rem;     // 32px
+  --space-10: 2.5rem;  // 40px
+  --space-12: 3rem;    // 48px
+  --space-16: 4rem;    // 64px
+  --space-20: 5rem;    // 80px
+  
+  // 🔲 圆角系统
+  --radius-none: 0;
+  --radius-sm: 0.25rem;   // 4px
+  --radius-md: 0.5rem;    // 8px
+  --radius-lg: 0.75rem;   // 12px
+  --radius-xl: 1rem;      // 16px
+  --radius-2xl: 1.5rem;   // 24px
+  --radius-full: 9999px;
+  
+  // 📊 字体系统
+  --font-size-xs: 0.75rem;    // 12px
+  --font-size-sm: 0.875rem;   // 14px
+  --font-size-base: 1rem;     // 16px
+  --font-size-lg: 1.125rem;   // 18px
+  --font-size-xl: 1.25rem;    // 20px
+  --font-size-2xl: 1.5rem;    // 24px
+  --font-size-3xl: 1.875rem;  // 30px
+  --font-size-4xl: 2.25rem;   // 36px
+  
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  // ⚡ 动画系统
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  // 📱 断点系统
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  
+  // 🎚️ Z-index 层级
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+// =====================================
+// 🔧 主题工具类
+// =====================================
+
+// 主题切换混合宏
+@mixin themed($property, $light-value, $dark-value) {
+  #{$property}: #{$light-value};
+  
+  .theme-dark & {
+    #{$property}: #{$dark-value};
+  }
+}
+
+// 玻璃拟态效果
+@mixin glass-morphism($opacity: 0.7) {
+  background: var(--bg-glass);
+  backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+}
+
+// 悬浮卡片效果
+@mixin elevated-card($level: 'md') {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-#{$level});
+  border: 1px solid var(--border-primary);
+  
+  transition: all var(--duration-normal) var(--ease-out);
+  
+  &:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+  }
+}
+
+// 渐变按钮
+@mixin gradient-button {
+  background: var(--gradient-primary);
+  border: none;
+  color: var(--text-inverse);
+  font-weight: var(--font-weight-medium);
+  transition: all var(--duration-normal) var(--ease-out);
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-colored);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// 响应式工具
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == 'sm' {
+    @media (min-width: 640px) {
+      @content;
+    }
+  } @else if $breakpoint == 'md' {
+    @media (min-width: 768px) {
+      @content;
+    }
+  } @else if $breakpoint == 'lg' {
+    @media (min-width: 1024px) {
+      @content;
+    }
+  } @else if $breakpoint == 'xl' {
+    @media (min-width: 1280px) {
+      @content;
+    }
+  } @else if $breakpoint == '2xl' {
+    @media (min-width: 1536px) {
+      @content;
+    }
+  }
+}
+
+@mixin respond-below($breakpoint) {
+  @if $breakpoint == 'sm' {
+    @media (max-width: 639px) {
+      @content;
+    }
+  } @else if $breakpoint == 'md' {
+    @media (max-width: 767px) {
+      @content;
+    }
+  } @else if $breakpoint == 'lg' {
+    @media (max-width: 1023px) {
+      @content;
+    }
+  } @else if $breakpoint == 'xl' {
+    @media (max-width: 1279px) {
+      @content;
+    }
+  } @else if $breakpoint == '2xl' {
+    @media (max-width: 1535px) {
+      @content;
+    }
+  }
+}
+
+@mixin respond-above($breakpoint) {
+  @include respond-to($breakpoint) {
+    @content;
+  }
+}
+
+// 动画预设
+@mixin fade-in($duration: var(--duration-normal)) {
+  animation: fade-in $duration var(--ease-out);
+}
+
+@mixin slide-up($duration: var(--duration-normal)) {
+  animation: slide-up $duration var(--ease-out);
+}
+
+// 关键帧动画
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+// =====================================
+// 🌓 主题切换动画
+// =====================================
+
+.theme-transition {
+  transition: background-color var(--duration-slow) var(--ease-in-out),
+              color var(--duration-slow) var(--ease-in-out),
+              border-color var(--duration-slow) var(--ease-in-out),
+              box-shadow var(--duration-slow) var(--ease-in-out);
+}
+
+// =====================================
+// 🎨 组件基础样式重置
+// =====================================
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: var(--line-height-normal);
+  transition: background-color var(--duration-slow) var(--ease-in-out),
+              color var(--duration-slow) var(--ease-in-out);
+}
+
+// 自定义滚动条
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-400);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-normal) var(--ease-out);
+  
+  &:hover {
+    background: var(--color-neutral-500);
+  }
+}
+
+// 文本选择样式
+::selection {
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+}
+
+.theme-dark ::selection {
+  background: var(--color-primary-800);
+  color: var(--color-primary-100);
+}

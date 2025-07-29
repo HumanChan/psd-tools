@@ -28,8 +28,8 @@ html, body {
   
   // 桌面端布局 (≥1200px)
   @include respond-to(xl) {
-    grid-template-columns: $sidebar-width-desktop 1fr $panel-width-desktop;
-    grid-template-rows: $toolbar-height-desktop 1fr;
+    grid-template-columns: var(--sidebar-width-desktop) 1fr var(--panel-width-desktop);
+    grid-template-rows: var(--toolbar-height-desktop) 1fr;
     grid-template-areas:
       "toolbar toolbar toolbar"
       "sidebar canvas panel";
@@ -37,8 +37,8 @@ html, body {
   
   // 平板端布局 (768px-1199px)
   @include respond-between(md, xl) {
-    grid-template-columns: $sidebar-width-tablet 1fr;
-    grid-template-rows: $toolbar-height-desktop 1fr $info-panel-height-tablet;
+    grid-template-columns: var(--sidebar-width-tablet) 1fr;
+    grid-template-rows: var(--toolbar-height-desktop) 1fr var(--info-panel-height-tablet);
     grid-template-areas:
       "toolbar toolbar"
       "sidebar canvas"
@@ -48,7 +48,7 @@ html, body {
   // 移动端布局 (<768px)
   @include respond-below(md) {
     grid-template-columns: 1fr;
-    grid-template-rows: $toolbar-height-mobile 1fr auto;
+    grid-template-rows: var(--toolbar-height-mobile) 1fr auto;
     grid-template-areas:
       "toolbar"
       "canvas"
@@ -85,21 +85,34 @@ html, body {
   justify-content: space-between;
 }
 
-// 滚动条样式优化
+// 滚动条样式优化 - 使用主题变量
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
+  background: var(--color-neutral-400);
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-normal) var(--ease-out);
+  
+  &:hover {
+    background: var(--color-neutral-500);
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+// 文本选择样式
+::selection {
+  background: var(--color-primary-100);
+  color: var(--color-primary-800);
+}
+
+.theme-dark ::selection {
+  background: var(--color-primary-800);
+  color: var(--color-primary-100);
 }

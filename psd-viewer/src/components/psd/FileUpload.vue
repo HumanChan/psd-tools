@@ -111,7 +111,7 @@ import { usePSDStore } from '@/stores/psd'
 import { parsePSDFile, PSDParseError } from '@/utils/psdParser'
 
 // 响应式布局
-const { isMobile, isTablet } = useResponsiveLayout()
+const { isMobile } = useResponsiveLayout()
 
 // PSD状态管理
 const psdStore = usePSDStore()
@@ -132,7 +132,6 @@ const currentFileName = ref('')
 const maxSizeMB = 20
 const maxSizeBytes = maxSizeMB * 1024 * 1024
 const acceptedFormats = '.psd,.psb'
-const acceptedMimeTypes = ['image/vnd.adobe.photoshop', 'application/octet-stream']
 
 // 计算属性
 const uploadTitle = computed(() => {

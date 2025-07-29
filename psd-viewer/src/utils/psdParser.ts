@@ -169,7 +169,7 @@ export class PSDParser {
       return 'text'
     }
     
-    if (layer.effects && layer.effects.length > 0) {
+    if (layer.effects && Array.isArray(layer.effects) && layer.effects.length > 0) {
       return 'effect'
     }
     
@@ -367,10 +367,6 @@ export class PSDParser {
    */
   public async regeneratePreview(psdFile: PSDFile, layerVisibilityMap: Map<string, boolean>): Promise<string | undefined> {
     try {
-      if (!psdFile.originalCanvas) {
-        return undefined
-      }
-
       // 创建新的canvas
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
@@ -483,7 +479,7 @@ export interface PSDParseOptions {
   /** 使用原始缩略图 */
   useRawThumbnail?: boolean
   /** ag-psd的其他选项 */
-  agPsdOptions?: any
+  agPsdOptions?: Record<string, unknown>
 }
 
 /**

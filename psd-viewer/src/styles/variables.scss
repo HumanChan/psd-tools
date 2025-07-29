@@ -1,5 +1,8 @@
 @use 'sass:map';
 
+// 引入主题系统
+@import './themes.scss';
+
 // 响应式断点定义
 $breakpoints: (
   xs: 0,
@@ -35,10 +38,19 @@ $breakpoints: (
   }
 }
 
-// 布局变量
-$sidebar-width-desktop: 320px;
-$sidebar-width-tablet: 280px;
-$panel-width-desktop: 280px;
-$toolbar-height-desktop: 60px;
-$toolbar-height-mobile: 50px;
-$info-panel-height-tablet: 120px;
+// 布局变量 (使用CSS变量)
+:root {
+  --sidebar-width-desktop: 320px;
+  --sidebar-width-tablet: 280px;
+  --panel-width-desktop: 280px;
+  --toolbar-height-desktop: 64px;
+  --toolbar-height-mobile: 56px;
+  --info-panel-height-tablet: 140px;
+  
+  // 新增布局变量
+  --canvas-padding: var(--space-6);
+  --panel-padding: var(--space-4);
+  --toolbar-padding: var(--space-4);
+  --border-radius-panel: var(--radius-lg);
+  --border-radius-card: var(--radius-md);
+}

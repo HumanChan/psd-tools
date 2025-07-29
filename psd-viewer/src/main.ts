@@ -1,5 +1,6 @@
 import './assets/main.css'
 import './styles/layout.scss'
+import './styles/themes.scss'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

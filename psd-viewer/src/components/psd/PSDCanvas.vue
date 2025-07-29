@@ -109,11 +109,10 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { Picture, Loading, Warning, ZoomOut, ZoomIn, Refresh, FullScreen, ScaleToOriginal } from '@element-plus/icons-vue'
 import { usePSDStore } from '@/stores/psd'
-import { useResponsiveLayout } from '@/composables/useResponsive'
+import type { PSDLayer } from '@/stores/psd'
 
-// Store和响应式布局
+// Store
 const psdStore = usePSDStore()
-const { isMobile, isTablet, isDesktop } = useResponsiveLayout()
 
 // 组件引用
 const canvasWrapper = ref<HTMLElement>()
@@ -161,7 +160,7 @@ const regeneratePreview = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // 递归渲染所有可见图层
-    const renderLayers = (layers: any[]) => {
+    const renderLayers = (layers: PSDLayer[]) => {
       layers.forEach(layer => {
         if (layer.visible && layer.canvas) {
           try {
